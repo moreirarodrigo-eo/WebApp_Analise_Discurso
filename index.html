@@ -8,7 +8,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/datatables.net-bs5@2.1.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <!-- Biblioteca para o Gráfico de Redes -->
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 </head>
 <body>
@@ -51,7 +50,9 @@
                         </div>
                     </div>
                     <input id="termo" class="form-control mt-3" placeholder="Termo para KWIC/coocorrência">
-                    <button id="processar" class="btn btn-primary w-100 mt-3">▶ Processar corpus</button>
+                    <button id="btnKwic" class="btn btn-outline-primary w-100 mt-2">Gerar KWIC / Associação</button>
+                    
+                    <button id="processar" class="btn btn-primary w-100 mt-4">▶ Processar corpus inteiro</button>
                     <button id="limpar" class="btn btn-outline-danger w-100 mt-2">Limpar</button>
                 </div>
             </div>
@@ -119,6 +120,7 @@
                     <div class="card">
                         <div class="card-header">Rede de Coocorrência de Palavras</div>
                         <div class="card-body">
+                            <button id="btnRede" class="btn btn-primary mb-3">▶ Gerar Grafo de Rede</button>
                             <div id="redeNetwork" style="height: 550px; border: 1px solid #e5e8eb; border-radius: 8px; background: white;"></div>
                             <p class="small text-secondary mt-2">Mapeamento das relações entre os 35 termos mais frequentes na mesma sentença.</p>
                         </div>
@@ -129,7 +131,10 @@
                         <div class="card-header">Previsão da Próxima Palavra</div>
                         <div class="card-body">
                             <p>Digite um termo base para descobrir as palavras que mais o sucedem estatisticamente (Bigramas).</p>
-                            <input id="termoPrev" class="form-control mb-3" placeholder="Ex: política, educação, saúde...">
+                            <div class="input-group mb-3">
+                                <input id="termoPrev" class="form-control" placeholder="Ex: política, educação, saúde...">
+                                <button id="btnPrev" class="btn btn-primary">▶ Prever Próxima Palavra</button>
+                            </div>
                             <table id="prevTable" class="table table-striped">
                                 <thead><tr><th>Palavra Base</th><th>Próxima Palavra</th><th>Freq. Absoluta</th><th>Freq. Relativa</th></tr></thead>
                                 <tbody></tbody>
