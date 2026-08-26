@@ -48,7 +48,7 @@ function runWithLoading(btnId, originalText, task) {
             task();
         } catch(e) {
             console.error(e);
-            alert("Ocorreu um erro interno durante o processamento da análise. Verifique se o texto não está vazio ou muito curto.");
+            alert("Erro durante o processamento. Certifique-se de que o texto não está vazio.");
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalText;
@@ -58,7 +58,6 @@ function runWithLoading(btnId, originalText, task) {
 
 function metrics(t,f){let raw=toks(t),u=f.length,total=f.reduce((a,b)=>a+b.n,0),sent=t.split(/[.!?]+/).filter(x=>x.trim()).length,ttr=total?u/total:0;document.getElementById('metricas').innerHTML=[[raw.length,'Tokens'],[u,'Vocabulário'],[(ttr*100).toFixed(1)+'%','Riqueza lexical'],[sent,'Sentenças']].map(x=>`<div class="col-sm-6 col-xl-3"><div class="metric"><b>${x[0]}</b><br><small>${x[1]}</small></div></div>`).join('');mk('perfil','doughnut',{labels:['Top 5','Demais'],datasets:[{data:[f.slice(0,5).reduce((a,b)=>a+b.n,0),Math.max(total-f.slice(0,5).reduce((a,b)=>a+b.n,0),0)]}]},{plugins:{legend:{position:'bottom'}}})}
 
-// Nuvem de Palavras separada
 function renderCloud(){
     let d=document.getElementById('cloud');
     d.innerHTML='';
@@ -76,37 +75,29 @@ function renderN(){
 
     if(window.ngT) window.ngT.destroy();
     
-    // Injeta os dados APENAS no tbody, respeitando o DataTables
     let rowsHtml = S.ngr.map(x=>{
         let rel = totalNg ? ((x.n / totalNg) * 100).toFixed(2) : 0;
         return `<tr><td>${esc(x.grama)}</td><td>${x.n}</td><td>${rel}%</td></tr>`;
     }).join('');
     
-    document.querySelector('#ngTable tbody').innerHTML = rowsHtml;
-    window.ngT = new DataTable('#ngTable', {pageLength: 10, lengthChange: false});
+    // Inserimos "Nenhum dado" caso rowsHtml seja vazio
+    document.querySelector('#ngTable tbody').innerHTML = rowsHtml || `<tr><td colspan="3" class="text-center">Nenhum dado</td></tr>`;
+    window.ngT = new DataTable('#ngTable', {pageLength: 10, lengthChange: false, destroy: true});
 }
 
 function renderK(){
     let term=norm(document.getElementById('termo').value),w=+document.getElementById('janela').value,a=toks(S.text),rows=[];
-    let exc = getExc();
     a.forEach((x,i)=>{if(norm(x)===term)rows.push({pre:a.slice(Math.max(0,i-w),i).join(' '),keyword:x,post:a.slice(i+1,i+w+1).join(' ')})});
     S.kw=rows;
     
     if(window.kwT) window.kwT.destroy();
     
-    // Se não tiver linhas, junta uma string vazia e deixa o DataTables exibir o aviso "Tabela Vazia" nativo
     let kwRowsHtml = rows.map(x=>`<tr><td>${esc(x.pre)}</td><td><b>${esc(x.keyword)}</b></td><td>${esc(x.post)}</td></tr>`).join('');
-    document.querySelector('#kwTable tbody').innerHTML = kwRowsHtml;
     
-    window.kwT = new DataTable('#kwTable', {pageLength: 10, lengthChange: false, ordering: false});
-    
-    let m=new Map();
-    a.forEach((x,i)=>{if(norm(x)===term)a.slice(Math.max(0,i-w),i+w+1).forEach(y=>{let n=norm(y);if(n!==term&&!SW.has(n)&&!exc.has(n))m.set(n,(m.get(n)||0)+1)})});
-    let c=[...m].map(([palavra,n])=>({palavra,n})).sort((a,b)=>b.n-a.n).slice(0,20).reverse();
-    mk('coocChart','bar',{labels:c.map(x=>x.palavra),datasets:[{data:c.map(x=>x.n),backgroundColor:'#7a5c61'}]},{indexAxis:'y',plugins:{legend:{display:false}}})
+    document.querySelector('#kwTable tbody').innerHTML = kwRowsHtml || `<tr><td colspan="3" class="text-center">Termo não encontrado</td></tr>`;
+    window.kwT = new DataTable('#kwTable', {pageLength: 10, lengthChange: false, ordering: false, destroy: true});
 }
 
-// Rede de Coocorrência via Vis.js
 function renderRede(){
     let topWords = S.freq.slice(0, 35);
     
@@ -168,8 +159,9 @@ function renderPrevisao(){
     if(window.prevT) window.prevT.destroy();
     
     let prevRowsHtml = rows.join('');
-    document.querySelector('#prevTable tbody').innerHTML = prevRowsHtml;
-    window.prevT = new DataTable('#prevTable', {pageLength: 10, lengthChange: false, order: [[2, 'desc']]});
+    document.querySelector('#prevTable tbody').innerHTML = prevRowsHtml || `<tr><td colspan="4" class="text-center">Nenhum dado encontrado</td></tr>`;
+    
+    window.prevT = new DataTable('#prevTable', {pageLength: 10, lengthChange: false, order: [[2, 'desc']], destroy: true});
 }
 
 function sentiment(){let a=selected(S.text),p=0,n=0;a.forEach(x=>{x=norm(x);if(POS.has(x))p++;if(NEG.has(x))n++});mk('sentChart','doughnut',{labels:['Positivo','Negativo','Neutro'],datasets:[{data:[p,n,Math.max(a.length-p-n,0)]}]},{plugins:{legend:{position:'bottom'}}});document.getElementById('sentText').innerHTML=`Foram identificados <b>${p}</b> marcadores positivos e <b>${n}</b> negativos. Resultado lexical exploratório: não detecta ironia, contexto ou pragmática.`}
@@ -186,8 +178,8 @@ function coding(){
         return `<tr><td>${esc(c)}</td><td>${h.length}</td><td>${esc(h.slice(0,5).join(' | ')||'—')}</td></tr>`;
     }).join('');
     
-    document.querySelector('#codTable tbody').innerHTML = codRowsHtml;
-    window.codT = new DataTable('#codTable', {pageLength: 10, lengthChange: false});
+    document.querySelector('#codTable tbody').innerHTML = codRowsHtml || `<tr><td colspan="3" class="text-center">Nenhum dado</td></tr>`;
+    window.codT = new DataTable('#codTable', {pageLength: 10, lengthChange: false, destroy: true});
 }
 
 function compare(){let a=count(selected(document.getElementById('a').value)),b=count(selected(document.getElementById('b').value)),ma=new Map(a.map(x=>[x.palavra,x.n])),mb=new Map(b.map(x=>[x.palavra,x.n])),k=[...new Set([...a.slice(0,10),...b.slice(0,10)].map(x=>x.palavra))].slice(0,15);mk('compChart','bar',{labels:k,datasets:[{label:'Texto A',data:k.map(x=>ma.get(x)||0)},{label:'Texto B',data:k.map(x=>mb.get(x)||0)}]});document.getElementById('compText').innerHTML='<p class="alert alert-light mt-3">Termos presentes nos dois rankings: '+k.filter(x=>ma.has(x)&&mb.has(x)).join(', ')+'</p>'}
@@ -199,7 +191,7 @@ function process(){
     if(!S.text) return alert('Insira um texto.');
     
     S.freq = count(selected(S.text));
-    S.bigramas = ng(selected(S.text), 2); // Pré-calcula os bigramas em background para a Previsão
+    S.bigramas = ng(selected(S.text), 2);
     
     metrics(S.text, S.freq);
     renderN();
@@ -215,12 +207,6 @@ document.getElementById('btnKwic').onclick = () => {
     if (!S.text) return alert('Processe o corpus primeiro.');
     if (!document.getElementById('termo').value) return alert('Digite um termo no campo acima.');
     runWithLoading('btnKwic', 'Gerar KWIC', renderK);
-};
-
-document.getElementById('btnCooc').onclick = () => {
-    if (!S.text) return alert('Processe o corpus primeiro.');
-    if (!document.getElementById('termo').value) return alert('Digite um termo no campo de KWIC/Associação na barra lateral.');
-    runWithLoading('btnCooc', '▶ Gerar Associação', renderK);
 };
 
 document.getElementById('btnNuvem').onclick = () => {
