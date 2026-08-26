@@ -56,7 +56,7 @@ function renderK(){
     mk('coocChart','bar',{labels:c.map(x=>x.palavra),datasets:[{data:c.map(x=>x.n),backgroundColor:'#7a5c61'}]},{indexAxis:'y',plugins:{legend:{display:false}}})
 }
 
-// NOVA FUNÇÃO: Rede de Coocorrência via Vis.js
+// Rede de Coocorrência via Vis.js
 function renderRede(){
     let topWords = S.freq.slice(0, 35); // Pegamos os 35 mais frequentes para o nó não ficar caótico
     let maxFreq = Math.max(...topWords.map(x => x.n));
@@ -104,7 +104,7 @@ function renderRede(){
     window.network = new vis.Network(container, data, options);
 }
 
-// NOVA FUNÇÃO: Previsão da Próxima Palavra baseada em Bigramas
+// Previsão da Próxima Palavra baseada em Bigramas
 function renderPrevisao(){
     let term = norm(document.getElementById('termoPrev').value.trim());
     let rows = [];
@@ -120,7 +120,8 @@ function renderPrevisao(){
         });
     }
 
-    document.querySelector('#prevTable tbody').innerHTML = rows.join('');
+    document.querySelector('#prevTable tbody').innerHTML = rows.length ? rows.join('') : '<tr><td colspan="4" class="text-center">Nenhum dado encontrado para esta palavra.</td></tr>';
+    
     if(window.prevT) window.prevT.destroy();
     window.prevT = new DataTable('#prevTable', {pageLength: 10, lengthChange: false, order: [[2, 'desc']]});
 }
@@ -131,29 +132,44 @@ function compare(){let a=count(selected(document.getElementById('a').value)),b=c
 function dl(name,text,type='text/csv'){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click()}
 function csv(a){return a.length?[Object.keys(a[0]).join(','),...a.map(x=>Object.values(x).map(v=>'"'+String(v).replaceAll('"','""')+'"').join(','))].join('\n'):''}
 
+// A função processar não ativa mais a rede nem a previsão automaticamente
 function process(){
     S.text=document.getElementById('texto').value.trim();
     if(!S.text)return alert('Insira um texto.');
     
     S.freq = count(selected(S.text));
-    S.bigramas = ng(selected(S.text), 2); // Pré-calcula os bigramas para a aba de Previsão
+    S.bigramas = ng(selected(S.text), 2); // Pré-calcula os bigramas para a aba de Previsão poder utilizá-los rapidamente
     
     metrics(S.text,S.freq);
     renderFreq();
     renderN();
-    renderK();
-    renderRede();
-    renderPrevisao();
     sentiment();
 }
 
+// Botão principal de processamento
 document.getElementById('processar').onclick=process;
-document.getElementById('ng').onchange=()=>S.text&&renderN();
-document.getElementById('janela').onchange=()=>S.text&&renderK();
 
-// Eventos para atualização dinâmica
-document.getElementById('termo').addEventListener('input', () => { if (S.text) renderK(); });
-document.getElementById('termoPrev').addEventListener('input', () => { if (S.text) renderPrevisao(); });
+// Botões específicos (Novos)
+document.getElementById('btnKwic').onclick = () => {
+    if (!S.text) return alert('Processe o corpus primeiro.');
+    if (!document.getElementById('termo').value) return alert('Digite um termo no campo acima.');
+    renderK();
+};
+
+document.getElementById('btnRede').onclick = () => {
+    if (!S.text) return alert('Processe o corpus primeiro.');
+    renderRede();
+};
+
+document.getElementById('btnPrev').onclick = () => {
+    if (!S.text) return alert('Processe o corpus primeiro.');
+    if (!document.getElementById('termoPrev').value) return alert('Digite um termo para prever.');
+    renderPrevisao();
+};
+
+// Outros eventos
+document.getElementById('ng').onchange = () => S.text && renderN();
+document.getElementById('janela').onchange = () => { if (S.text && document.getElementById('termo').value) renderK(); };
 document.getElementById('excluir').addEventListener('change', () => { if (S.text) process(); });
 
 document.getElementById('limpar').onclick=()=>document.getElementById('texto').value='';
@@ -169,6 +185,5 @@ document.getElementById('exHtml').onclick=()=>dl('relatorio.html',`<meta charset
 document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(el => {
     el.addEventListener('shown.bs.tab', () => {
         Object.values(C).forEach(chart => chart.resize());
-        if(window.network) window.network.fit(); // Ajusta a rede ao espaço
     });
 });
