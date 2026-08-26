@@ -1,1 +1,188 @@
-body{background:#f5f7fa;color:#26323d}.sidebar{position:sticky;top:1rem;border:0;border-radius:14px}.card{border:0;border-radius:12px}.card-header{background:#fff;font-weight:600}.chart{height:430px;position:relative}.cloud{height:520px;background:white;position:relative}.metric{background:white;border:1px solid #e5e8eb;border-radius:12px;padding:1rem}.metric b{font-size:1.45rem}.metric small{color:#6c757d}@media(max-width:991px){.sidebar{position:static}.chart{height:360px}}
+/* ============================================================
+   LABORATÓRIO DE ANÁLISE DE DISCURSO & PLN
+   ============================================================ */
+
+body {
+    background: #f5f7fa;
+    color: #212529;
+}
+
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+
+.sidebar {
+    position: sticky;
+    top: 15px;
+}
+
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+
+.card {
+    border: 1px solid #e3e7eb;
+    border-radius: 10px;
+}
+
+.card-header {
+    font-weight: 600;
+}
+
+
+/* ============================================================
+   MÉTRICAS
+   ============================================================ */
+
+.metric {
+    background: white;
+    border: 1px solid #e3e7eb;
+    border-radius: 10px;
+    padding: 18px;
+    text-align: center;
+    min-height: 95px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.metric b {
+    font-size: 1.7rem;
+    color: #0d6efd;
+}
+
+.metric small {
+    color: #6c757d;
+}
+
+
+/* ============================================================
+   GRÁFICOS
+   ============================================================ */
+
+.chart {
+    position: relative;
+    height: 400px;
+}
+
+#ngChart {
+    min-height: 400px;
+}
+
+#compChart {
+    min-height: 400px;
+}
+
+#sentChart {
+    min-height: 350px;
+}
+
+
+/* ============================================================
+   NUVEM
+   ============================================================ */
+
+.cloud {
+    width: 100%;
+    min-height: 550px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+
+/* ============================================================
+   TABELAS
+   ============================================================ */
+
+table {
+    background: white;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+
+/* ============================================================
+   KWIC
+   ============================================================ */
+
+#kwTable td:nth-child(2) {
+    text-align: center;
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+   TEXTAREAS
+   ============================================================ */
+
+textarea {
+    resize: vertical;
+}
+
+
+/* ============================================================
+   BOTÕES
+   ============================================================ */
+
+button {
+    transition:
+        transform 0.1s ease,
+        opacity 0.2s ease;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+
+/* ============================================================
+   TABS
+   ============================================================ */
+
+.nav-tabs {
+    background: white;
+    border-radius: 8px 8px 0 0;
+    padding: 5px 5px 0 5px;
+}
+
+.nav-tabs .nav-link {
+    color: #495057;
+}
+
+.nav-tabs .nav-link.active {
+    font-weight: 600;
+}
+
+
+/* ============================================================
+   RESPONSIVIDADE
+   ============================================================ */
+
+@media (max-width: 991px) {
+
+    .sidebar {
+        position: static;
+    }
+
+}
+
+
+@media (max-width: 576px) {
+
+    .chart {
+        height: 300px;
+    }
+
+    .cloud {
+        min-height: 400px;
+    }
+
+}
