@@ -59,12 +59,6 @@ function runWithLoading(btnId, originalText, task) {
 
 function metrics(t,f){let raw=toks(t),u=f.length,total=f.reduce((a,b)=>a+b.n,0),sent=t.split(/[.!?]+/).filter(x=>x.trim()).length,ttr=total?u/total:0;document.getElementById('metricas').innerHTML=[[raw.length,'Tokens'],[u,'Vocabulário'],[(ttr*100).toFixed(1)+'%','Riqueza lexical'],[sent,'Sentenças']].map(x=>`<div class="col-sm-6 col-xl-3"><div class="metric"><b>${x[0]}</b><br><small>${x[1]}</small></div></div>`).join('');mk('perfil','doughnut',{labels:['Top 5','Demais'],datasets:[{data:[f.slice(0,5).reduce((a,b)=>a+b.n,0),Math.max(total-f.slice(0,5).reduce((a,b)=>a+b.n,0),0)]}]},{plugins:{legend:{position:'bottom'}}})}
 
-// Renderiza apenas o gráfico de barras
-function renderFreq(){
-    let a=S.freq.slice(0,20).reverse();
-    mk('freqChart','bar',{labels:a.map(x=>x.palavra),datasets:[{data:a.map(x=>x.n),backgroundColor:'#2C3E50'}]},{indexAxis:'y',plugins:{legend:{display:false}}});
-}
-
 // Renderiza Nuvem de Palavras separadamente
 function renderCloud(){
     let d=document.getElementById('cloud');
@@ -74,16 +68,32 @@ function renderCloud(){
     WordCloud(d,{list:S.freq.slice(0,100).map(x=>[x.palavra,12+x.n/mx*42]),gridSize:8,fontFamily:'Arial',color:'random-dark',backgroundColor:'white',rotateRatio:.15});
 }
 
-function renderN(){S.ngr=ng(selected(S.text),+document.getElementById('ng').value);let a=S.ngr.slice(0,20).reverse();mk('ngChart','bar',{labels:a.map(x=>x.grama),datasets:[{data:a.map(x=>x.n),backgroundColor:'#536878'}]},{indexAxis:'y',plugins:{legend:{display:false}}});document.querySelector('#ngTable tbody').innerHTML=S.ngr.map(x=>`<tr><td>${esc(x.grama)}</td><td>${x.n}</td></tr>`).join('');if(window.ngT)ngT.destroy();window.ngT=new DataTable('#ngTable',{pageLength:10,lengthChange:false})}
+function renderN(){
+    S.ngr=ng(selected(S.text),+document.getElementById('ng').value);
+    let a=S.ngr.slice(0,20).reverse();
+    mk('ngChart','bar',{labels:a.map(x=>x.grama),datasets:[{data:a.map(x=>x.n),backgroundColor:'#536878'}]},{indexAxis:'y',plugins:{legend:{display:false}}});
+    
+    // Cálculo do total para gerar a %
+    let totalNg = S.ngr.reduce((sum, item) => sum + item.n, 0);
+
+    if(window.ngT) window.ngT.destroy(); // <--- Destruir o DataTable ANTES de injetar o novo HTML
+    document.querySelector('#ngTable tbody').innerHTML=S.ngr.map(x=>{
+        let rel = totalNg ? ((x.n / totalNg) * 100).toFixed(2) : 0;
+        return `<tr><td>${esc(x.grama)}</td><td>${x.n}</td><td>${rel}%</td></tr>`
+    }).join('');
+    
+    window.ngT=new DataTable('#ngTable',{pageLength:10,lengthChange:false});
+}
 
 function renderK(){
     let term=norm(document.getElementById('termo').value),w=+document.getElementById('janela').value,a=toks(S.text),rows=[];
     let exc = getExc();
     a.forEach((x,i)=>{if(norm(x)===term)rows.push({pre:a.slice(Math.max(0,i-w),i).join(' '),keyword:x,post:a.slice(i+1,i+w+1).join(' ')})});
     S.kw=rows;
+    
+    if(window.kwT) window.kwT.destroy(); // <--- Destruir o DataTable ANTES de injetar o HTML
     document.querySelector('#kwTable tbody').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.pre)}</td><td><b>${esc(x.keyword)}</b></td><td>${esc(x.post)}</td></tr>`).join(''):'';
     
-    if(window.kwT)kwT.destroy();
     window.kwT=new DataTable('#kwTable',{pageLength:10,lengthChange:false,ordering:false});
     
     let m=new Map();
@@ -153,9 +163,9 @@ function renderPrevisao(){
         });
     }
 
+    if(window.prevT) window.prevT.destroy(); // <--- Destruir o DataTable ANTES de injetar o HTML
     document.querySelector('#prevTable tbody').innerHTML = rows.length ? rows.join('') : '<tr><td colspan="4" class="text-center">Nenhum dado encontrado para esta palavra.</td></tr>';
     
-    if(window.prevT) window.prevT.destroy();
     window.prevT = new DataTable('#prevTable', {pageLength: 10, lengthChange: false, order: [[2, 'desc']]});
 }
 
@@ -173,7 +183,6 @@ function process(){
     S.bigramas = ng(selected(S.text), 2); 
     
     metrics(S.text,S.freq);
-    renderFreq();
     renderN();
     sentiment();
 }
@@ -219,10 +228,9 @@ document.getElementById('limpar').onclick=()=>document.getElementById('texto').v
 document.getElementById('codificar').onclick=coding;
 document.getElementById('comparar').onclick=compare;
 document.getElementById('file').onchange=e=>{let f=e.target.files[0];if(f){let r=new FileReader();r.onload=()=>document.getElementById('texto').value=r.result;r.readAsText(f)}};
-document.getElementById('exFreq').onclick=()=>dl('frequencia.csv',csv(S.freq));
 document.getElementById('exNg').onclick=()=>dl('ngrams.csv',csv(S.ngr));
 document.getElementById('exKw').onclick=()=>dl('kwic.csv',csv(S.kw));
-document.getElementById('exHtml').onclick=()=>dl('relatorio.html',`<meta charset="utf-8"><h1>Relatório de Análise de Discurso & PLN</h1><h2>Frequência</h2><table border="1"><tr><th>Termo</th><th>Frequência</th></tr>${S.freq.slice(0,30).map(x=>`<tr><td>${esc(x.palavra)}</td><td>${x.n}</td></tr>`).join('')}</table><h2>KWIC</h2><pre>${S.kw.map(x=>x.pre+' ['+x.keyword+'] '+x.post).join('\n')}</pre>`,'text/html');
+document.getElementById('exHtml').onclick=()=>dl('relatorio.html',`<meta charset="utf-8"><h1>Relatório de Análise de Discurso & PLN</h1><h2>KWIC</h2><pre>${S.kw.map(x=>x.pre+' ['+x.keyword+'] '+x.post).join('\n')}</pre>`,'text/html');
 
 document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(el => {
     el.addEventListener('shown.bs.tab', () => {
