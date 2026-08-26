@@ -49,8 +49,8 @@
                             </select>
                         </div>
                     </div>
-                    <input id="termo" class="form-control mt-3" placeholder="Termo para KWIC/coocorrência">
-                    <button id="btnKwic" class="btn btn-outline-primary w-100 mt-2">Gerar KWIC / Associação</button>
+                    <input id="termo" class="form-control mt-3" placeholder="Termo para KWIC/Associação">
+                    <button id="btnKwic" class="btn btn-outline-primary w-100 mt-2">Gerar KWIC</button>
                     
                     <button id="processar" class="btn btn-primary w-100 mt-4">▶ Processar corpus inteiro</button>
                     <button id="limpar" class="btn btn-outline-danger w-100 mt-2">Limpar</button>
@@ -61,6 +61,7 @@
             <ul class="nav nav-tabs flex-wrap">
                 <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#visao">Visão geral</button></li>
                 <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#freq">Frequência</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#nuvem">Nuvem</button></li>
                 <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ngram">N-gramas</button></li>
                 <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#kwic">KWIC</button></li>
                 <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#cooc">Associação</button></li>
@@ -84,9 +85,14 @@
                         <div class="card-header">20 termos mais frequentes</div>
                         <div class="card-body chart"><canvas id="freqChart"></canvas></div>
                     </div>
-                    <div class="card mt-3">
+                </div>
+                <div class="tab-pane fade" id="nuvem">
+                    <div class="card">
                         <div class="card-header">Nuvem de palavras</div>
-                        <div id="cloud" class="cloud"></div>
+                        <div class="card-body">
+                            <button id="btnNuvem" class="btn btn-primary mb-3">▶ Gerar Nuvem de Palavras</button>
+                            <div id="cloud" class="cloud"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="tab-pane fade" id="ngram">
@@ -113,7 +119,10 @@
                 <div class="tab-pane fade" id="cooc">
                     <div class="card">
                         <div class="card-header">Palavras associadas (Termo Específico)</div>
-                        <div class="card-body chart"><canvas id="coocChart"></canvas></div>
+                        <div class="card-body">
+                            <button id="btnCooc" class="btn btn-primary mb-3">▶ Gerar Associação</button>
+                            <div class="chart"><canvas id="coocChart"></canvas></div>
+                        </div>
                     </div>
                 </div>
                 <div class="tab-pane fade" id="rede">
