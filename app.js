@@ -36,6 +36,30 @@ let S={text:'',freq:[],ngr:[],kw:[],bigramas:[]},C={};
 function mk(id,type,data,opt={}){if(C[id])C[id].destroy();C[id]=new Chart(document.getElementById(id),{type,data,options:{responsive:true,maintainAspectRatio:false,...opt}})}
 function esc(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
 
+// Função que executa uma tarefa com delay para permitir que o navegador mostre o status "Processando..."
+function runWithLoading(btnId, originalText, task) {
+    let btn = document.getElementById(btnId);
+    if (!btn) return;
+    
+    // Altera o botão visualmente e trava ele
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...`;
+    
+    // O setTimeout força o navegador a renderizar o spinner antes de travar processando a matemática pesada
+    setTimeout(() => {
+        try {
+            task();
+        } catch(e) {
+            console.error(e);
+            alert("Ocorreu um erro durante o processamento da análise.");
+        } finally {
+            // Restaura o botão ao normal após concluir
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }, 50); 
+}
+
 function metrics(t,f){let raw=toks(t),u=f.length,total=f.reduce((a,b)=>a+b.n,0),sent=t.split(/[.!?]+/).filter(x=>x.trim()).length,ttr=total?u/total:0;document.getElementById('metricas').innerHTML=[[raw.length,'Tokens'],[u,'Vocabulário'],[(ttr*100).toFixed(1)+'%','Riqueza lexical'],[sent,'Sentenças']].map(x=>`<div class="col-sm-6 col-xl-3"><div class="metric"><b>${x[0]}</b><br><small>${x[1]}</small></div></div>`).join('');mk('perfil','doughnut',{labels:['Top 5','Demais'],datasets:[{data:[f.slice(0,5).reduce((a,b)=>a+b.n,0),Math.max(total-f.slice(0,5).reduce((a,b)=>a+b.n,0),0)]}]},{plugins:{legend:{position:'bottom'}}})}
 function renderFreq(){let a=S.freq.slice(0,20).reverse();mk('freqChart','bar',{labels:a.map(x=>x.palavra),datasets:[{data:a.map(x=>x.n),backgroundColor:'#2C3E50'}]},{indexAxis:'y',plugins:{legend:{display:false}}});let d=document.getElementById('cloud');d.innerHTML='';let mx=Math.max(...S.freq.map(x=>x.n),1);WordCloud(d,{list:S.freq.slice(0,100).map(x=>[x.palavra,12+x.n/mx*42]),gridSize:8,fontFamily:'Arial',color:'random-dark',backgroundColor:'white',rotateRatio:.15})}
 function renderN(){S.ngr=ng(selected(S.text),+document.getElementById('ng').value);let a=S.ngr.slice(0,20).reverse();mk('ngChart','bar',{labels:a.map(x=>x.grama),datasets:[{data:a.map(x=>x.n),backgroundColor:'#536878'}]},{indexAxis:'y',plugins:{legend:{display:false}}});document.querySelector('#ngTable tbody').innerHTML=S.ngr.map(x=>`<tr><td>${esc(x.grama)}</td><td>${x.n}</td></tr>`).join('');if(window.ngT)ngT.destroy();window.ngT=new DataTable('#ngTable',{pageLength:10,lengthChange:false})}
@@ -58,10 +82,9 @@ function renderK(){
 
 // Rede de Coocorrência via Vis.js
 function renderRede(){
-    let topWords = S.freq.slice(0, 35); // Pegamos os 35 mais frequentes para o nó não ficar caótico
+    let topWords = S.freq.slice(0, 35); // Pegamos os 35 mais frequentes
     let maxFreq = Math.max(...topWords.map(x => x.n));
     
-    // Criando Nós (Nodes)
     let nodesArray = topWords.map(x => ({
         id: x.palavra,
         label: x.palavra,
@@ -72,7 +95,6 @@ function renderRede(){
         font: { size: 16, face: 'Arial' }
     }));
 
-    // Calculando as Arestas (Edges - Coocorrência nas mesmas frases)
     let edgesArray = [];
     let sentences = S.text.split(/[.!?]+/).map(s => selected(s).map(norm));
     
@@ -109,9 +131,8 @@ function renderPrevisao(){
     let term = norm(document.getElementById('termoPrev').value.trim());
     let rows = [];
     if(term && S.bigramas.length){
-        // Filtra os bigramas onde a primeira palavra é igual ao termo buscado
         let matches = S.bigramas.filter(x => x.grama.split(' ')[0] === term);
-        let total = matches.reduce((sum, item) => sum + item.n, 0); // Frequência total do termo como base
+        let total = matches.reduce((sum, item) => sum + item.n, 0);
         
         rows = matches.map(x => {
             let nextWord = x.grama.split(' ')[1];
@@ -132,13 +153,12 @@ function compare(){let a=count(selected(document.getElementById('a').value)),b=c
 function dl(name,text,type='text/csv'){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click()}
 function csv(a){return a.length?[Object.keys(a[0]).join(','),...a.map(x=>Object.values(x).map(v=>'"'+String(v).replaceAll('"','""')+'"').join(','))].join('\n'):''}
 
-// A função processar não ativa mais a rede nem a previsão automaticamente
 function process(){
     S.text=document.getElementById('texto').value.trim();
     if(!S.text)return alert('Insira um texto.');
     
     S.freq = count(selected(S.text));
-    S.bigramas = ng(selected(S.text), 2); // Pré-calcula os bigramas para a aba de Previsão poder utilizá-los rapidamente
+    S.bigramas = ng(selected(S.text), 2); // Pré-calcula os bigramas em background
     
     metrics(S.text,S.freq);
     renderFreq();
@@ -146,31 +166,31 @@ function process(){
     sentiment();
 }
 
-// Botão principal de processamento
-document.getElementById('processar').onclick=process;
+// Vinculando os botões à função de Loading
+document.getElementById('processar').onclick = () => {
+    runWithLoading('processar', '▶ Processar corpus inteiro', process);
+};
 
-// Botões específicos (Novos)
 document.getElementById('btnKwic').onclick = () => {
     if (!S.text) return alert('Processe o corpus primeiro.');
     if (!document.getElementById('termo').value) return alert('Digite um termo no campo acima.');
-    renderK();
+    runWithLoading('btnKwic', 'Gerar KWIC / Associação', renderK);
 };
 
 document.getElementById('btnRede').onclick = () => {
     if (!S.text) return alert('Processe o corpus primeiro.');
-    renderRede();
+    runWithLoading('btnRede', '▶ Gerar Grafo de Rede', renderRede);
 };
 
 document.getElementById('btnPrev').onclick = () => {
     if (!S.text) return alert('Processe o corpus primeiro.');
     if (!document.getElementById('termoPrev').value) return alert('Digite um termo para prever.');
-    renderPrevisao();
+    runWithLoading('btnPrev', '▶ Prever Próxima Palavra', renderPrevisao);
 };
 
-// Outros eventos
+// Outros eventos instantâneos
 document.getElementById('ng').onchange = () => S.text && renderN();
 document.getElementById('janela').onchange = () => { if (S.text && document.getElementById('termo').value) renderK(); };
-document.getElementById('excluir').addEventListener('change', () => { if (S.text) process(); });
 
 document.getElementById('limpar').onclick=()=>document.getElementById('texto').value='';
 document.getElementById('codificar').onclick=coding;
@@ -181,7 +201,6 @@ document.getElementById('exNg').onclick=()=>dl('ngrams.csv',csv(S.ngr));
 document.getElementById('exKw').onclick=()=>dl('kwic.csv',csv(S.kw));
 document.getElementById('exHtml').onclick=()=>dl('relatorio.html',`<meta charset="utf-8"><h1>Relatório de Análise de Discurso & PLN</h1><h2>Frequência</h2><table border="1"><tr><th>Termo</th><th>Frequência</th></tr>${S.freq.slice(0,30).map(x=>`<tr><td>${esc(x.palavra)}</td><td>${x.n}</td></tr>`).join('')}</table><h2>KWIC</h2><pre>${S.kw.map(x=>x.pre+' ['+x.keyword+'] '+x.post).join('\n')}</pre>`,'text/html');
 
-// Redimensionamento dos gráficos ao mudar de aba
 document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(el => {
     el.addEventListener('shown.bs.tab', () => {
         Object.values(C).forEach(chart => chart.resize());
