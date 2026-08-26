@@ -74,16 +74,15 @@ function renderN(){
     
     let totalNg = S.ngr.reduce((sum, item) => sum + item.n, 0);
 
-    // Destroi de forma segura e reescreve a tabela inteira para evitar bugs do DataTable
     if(window.ngT) window.ngT.destroy();
     
+    // Injeta os dados APENAS no tbody, respeitando o DataTables
     let rowsHtml = S.ngr.map(x=>{
         let rel = totalNg ? ((x.n / totalNg) * 100).toFixed(2) : 0;
         return `<tr><td>${esc(x.grama)}</td><td>${x.n}</td><td>${rel}%</td></tr>`;
     }).join('');
     
-    document.querySelector('#ngTable').innerHTML = `<thead><tr><th>Expressão</th><th>Frequência</th><th>%</th></tr></thead><tbody>${rowsHtml}</tbody>`;
-    
+    document.querySelector('#ngTable tbody').innerHTML = rowsHtml;
     window.ngT = new DataTable('#ngTable', {pageLength: 10, lengthChange: false});
 }
 
@@ -95,8 +94,9 @@ function renderK(){
     
     if(window.kwT) window.kwT.destroy();
     
-    let kwRowsHtml = rows.length ? rows.map(x=>`<tr><td>${esc(x.pre)}</td><td><b>${esc(x.keyword)}</b></td><td>${esc(x.post)}</td></tr>`).join('') : '<tr><td colspan="3" class="text-center">Termo não encontrado</td></tr>';
-    document.querySelector('#kwTable').innerHTML = `<thead><tr><th>Anterior</th><th>Termo</th><th>Posterior</th></tr></thead><tbody>${kwRowsHtml}</tbody>`;
+    // Se não tiver linhas, junta uma string vazia e deixa o DataTables exibir o aviso "Tabela Vazia" nativo
+    let kwRowsHtml = rows.map(x=>`<tr><td>${esc(x.pre)}</td><td><b>${esc(x.keyword)}</b></td><td>${esc(x.post)}</td></tr>`).join('');
+    document.querySelector('#kwTable tbody').innerHTML = kwRowsHtml;
     
     window.kwT = new DataTable('#kwTable', {pageLength: 10, lengthChange: false, ordering: false});
     
@@ -167,9 +167,8 @@ function renderPrevisao(){
 
     if(window.prevT) window.prevT.destroy();
     
-    let prevRowsHtml = rows.length ? rows.join('') : '<tr><td colspan="4" class="text-center">Nenhum dado encontrado para esta palavra.</td></tr>';
-    document.querySelector('#prevTable').innerHTML = `<thead><tr><th>Palavra Base</th><th>Próxima Palavra</th><th>Freq. Absoluta</th><th>Freq. Relativa</th></tr></thead><tbody>${prevRowsHtml}</tbody>`;
-    
+    let prevRowsHtml = rows.join('');
+    document.querySelector('#prevTable tbody').innerHTML = prevRowsHtml;
     window.prevT = new DataTable('#prevTable', {pageLength: 10, lengthChange: false, order: [[2, 'desc']]});
 }
 
@@ -187,7 +186,7 @@ function coding(){
         return `<tr><td>${esc(c)}</td><td>${h.length}</td><td>${esc(h.slice(0,5).join(' | ')||'—')}</td></tr>`;
     }).join('');
     
-    document.querySelector('#codTable').innerHTML = `<thead><tr><th>Categoria</th><th>Ocorrências</th><th>Trechos</th></tr></thead><tbody>${codRowsHtml}</tbody>`;
+    document.querySelector('#codTable tbody').innerHTML = codRowsHtml;
     window.codT = new DataTable('#codTable', {pageLength: 10, lengthChange: false});
 }
 
