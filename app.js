@@ -2,14 +2,36 @@ const SW=new Set(`a à às ao aos aquele aquela aquelas aqueles aquilo aqui aind
 const POS=new Set(`bom boa positivo positiva sucesso prosperidade melhoria avanço esperança futuro oportunidade benefício benefícios forte força sustentável sustentabilidade adaptação resiliente resiliência proteção preservar preservação cooperação confiança solução soluções desenvolvimento inclusão justiça qualidade crescimento excelência excelente feliz felicidade alegria alegre paz harmonia harmonioso seguro segurança lucro lucrativo riqueza rico construção construir apoiar apoio ajuda solidariedade igualdade equidade transparente transparência honestidade ética ético saúde saudável inovação inovar criatividade inteligente inteligência sabedoria educação aprendizado ecológico conservação limpo eficiência eficiente otimismo otimista vitalidade vital respeito respeitar autonomia liberdade libertação conquista vitória vencedor prosperar brilhante maravilha maravilhoso vida vivo amor amar amizade`.split(/\s+/).map(norm));
 const NEG=new Set(`ruim má mau negativo negativa problema problemas crise risco riscos ameaça perda perdas dano danos destruição desmatamento seca estiagem incêndio incendio fogo queimadas conflito dificuldade pobreza vulnerável vulnerabilidade medo insegurança fracasso pior piora prejuízo falta escassez pressão sofrimento dor doente doença triste tristeza raiva ódio violento violência agressão atacar guerra corrupção corrupto desigualdade injustiça roubo fraude mentira falso falência dívida endividado desemprego desempregado morte morrer letal fatal poluição poluir tóxico lixo sujo ignorância ignorante estupidez erro errar culpa culpado terror pânico assustador desastre tragédia trágico fome miséria fraqueza fraco declínio queda colapso ruína inimigo hostil depressão abandono desespero`.split(/\s+/).map(norm));
 
-
+const SW=new Set(`a à às ao aos aquele aquela aquelas aqueles aquilo aqui ainda algo algum alguma algumas alguns ali ambos ampla amplo amplas amplos antes após as até com como contra da das de dela delas dele deles depois dessa dessas desse desses desta destas deste destes do dos e é em enquanto entre era eram essa essas esse esses esta está estão estas este estes eu foi foram há isso isto já mais mas me meu meus minha minhas na não nas nem nesse nessa nesta neste no nos nós nossa nossas nosso nossos num numa nunca o os ou outra outras outro outros para pela pelas pelo pelos por porque qual quando quanto que quem se sem ser seu seus sob sobre sua suas também tem tendo tenha tenham tenho te toda todas todo todos tu tua tuas um uma umas uns vai vais vamos você vocês vos`.split(/\s+/));
+const POS=new Set(`bom boa positivo positiva sucesso prosperidade melhoria avanço esperança futuro oportunidade benefício benefícios forte força sustentável sustentabilidade adaptação resiliente resiliência proteção preservar preservação cooperação confiança solução soluções desenvolvimento inclusão justiça qualidade crescimento excelência excelente feliz felicidade alegria alegre paz harmonia harmonioso seguro segurança lucro lucrativo riqueza rico construção construir apoiar apoio ajuda solidariedade igualdade equidade transparente transparência honestidade ética ético saúde saudável inovação inovar criatividade inteligente inteligência sabedoria educação aprendizado ecológico conservação limpo eficiência eficiente otimismo otimista vitalidade vital respeito respeitar autonomia liberdade libertação conquista vitória vencedor prosperar brilhante maravilha maravilhoso vida vivo amor amar amizade`.split(/\s+/).map(norm));
+const NEG=new Set(`ruim má mau negativo negativa problema problemas crise risco riscos ameaça perda perdas dano danos destruição desmatamento seca estiagem incêndio incendio fogo queimadas conflito dificuldade pobreza vulnerável vulnerabilidade medo insegurança fracasso pior piora prejuízo falta escassez pressão sofrimento dor doente doença triste tristeza raiva ódio violento violência agressão atacar guerra corrupção corrupto desigualdade injustiça roubo fraude mentira falso falência dívida endividado desemprego desempregado morte morrer letal fatal poluição poluir tóxico lixo sujo ignorância ignorante estupidez erro errar culpa culpado terror pânico assustador desastre tragédia trágico fome miséria fraqueza fraco declínio queda colapso ruína inimigo hostil depressão abandono desespero`.split(/\s+/).map(norm));
 
 function norm(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
 function toks(s){return s.replace(/[“”"‘’]/g,'').split(/\s+/).map(x=>x.replace(/^[^\p{L}\p{N}-]+|[^\p{L}\p{N}-]+$/gu,'')).filter(Boolean)}
 function bard(x){if(x.length<3||SW.has(x))return false;return !(x.length>5&&['ar','er','ir','ando','endo','indo','ado','ido','ava','avam','aria','asse','esse','isse'].some(e=>x.endsWith(e)))}
-function selected(s){return toks(s).filter(x=>{let n=norm(x);return n.length>1&&!/\d/.test(n)&&(document.querySelector('[name=metodo]:checked').value==='pln'?!SW.has(n):bard(n))})}
+
+function selected(s){
+    let exc=new Set(document.getElementById('excluir').value.split(',').map(x=>norm(x.trim())).filter(Boolean));
+    return toks(s).filter(x=>{
+        let n=norm(x);
+        if(exc.has(n)) return false;
+        return n.length>1&&!/\d/.test(n)&&(document.querySelector('[name=metodo]:checked').value==='pln'?!SW.has(n):bard(n))
+    })
+}
+
 function count(a){let m=new Map();a.forEach(x=>{x=norm(x);m.set(x,(m.get(x)||0)+1)});return [...m].map(([palavra,n])=>({palavra,n})).sort((a,b)=>b.n-a.n)}
-function ng(a,n){let m=new Map();for(let i=0;i<=a.length-n;i++){let g=a.slice(i,i+n).map(norm);if(g.some(x=>SW.has(x)))continue;g=g.join(' ');m.set(g,(m.get(g)||0)+1)}return [...m].map(([grama,n])=>({grama,n})).filter(x=>x.n>1).sort((a,b)=>b.n-a.n)}
+
+function ng(a,n){
+    let exc=new Set(document.getElementById('excluir').value.split(',').map(x=>norm(x.trim())).filter(Boolean));
+    let m=new Map();
+    for(let i=0;i<=a.length-n;i++){
+        let g=a.slice(i,i+n).map(norm);
+        if(g.some(x=>SW.has(x) || exc.has(x)))continue;
+        g=g.join(' ');
+        m.set(g,(m.get(g)||0)+1)
+    }
+    return [...m].map(([grama,n])=>({grama,n})).filter(x=>x.n>1).sort((a,b)=>b.n-a.n)
+}
 
 let S={text:'',freq:[],ngr:[],kw:[]},C={};
 
@@ -22,16 +44,16 @@ function renderN(){S.ngr=ng(selected(S.text),+document.getElementById('ng').valu
 
 function renderK(){
     let term=norm(document.getElementById('termo').value),w=+document.getElementById('janela').value,a=toks(S.text),rows=[];
+    let exc=new Set(document.getElementById('excluir').value.split(',').map(x=>norm(x.trim())).filter(Boolean));
     a.forEach((x,i)=>{if(norm(x)===term)rows.push({pre:a.slice(Math.max(0,i-w),i).join(' '),keyword:x,post:a.slice(i+1,i+w+1).join(' ')})});
     S.kw=rows;
-    // A correção do DataTables está aqui: removido o <tr><td colspan="3">
     document.querySelector('#kwTable tbody').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.pre)}</td><td><b>${esc(x.keyword)}</b></td><td>${esc(x.post)}</td></tr>`).join(''):'';
     
     if(window.kwT)kwT.destroy();
     window.kwT=new DataTable('#kwTable',{pageLength:10,lengthChange:false,ordering:false});
     
     let m=new Map();
-    a.forEach((x,i)=>{if(norm(x)===term)a.slice(Math.max(0,i-w),i+w+1).forEach(y=>{let n=norm(y);if(n!==term&&!SW.has(n))m.set(n,(m.get(n)||0)+1)})});
+    a.forEach((x,i)=>{if(norm(x)===term)a.slice(Math.max(0,i-w),i+w+1).forEach(y=>{let n=norm(y);if(n!==term&&!SW.has(n)&&!exc.has(n))m.set(n,(m.get(n)||0)+1)})});
     let c=[...m].map(([palavra,n])=>({palavra,n})).sort((a,b)=>b.n-a.n).slice(0,20).reverse();
     mk('coocChart','bar',{labels:c.map(x=>x.palavra),datasets:[{data:c.map(x=>x.n),backgroundColor:'#7a5c61'}]},{indexAxis:'y',plugins:{legend:{display:false}}})
 }
