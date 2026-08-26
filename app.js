@@ -36,24 +36,21 @@ let S={text:'',freq:[],ngr:[],kw:[],bigramas:[]},C={};
 function mk(id,type,data,opt={}){if(C[id])C[id].destroy();C[id]=new Chart(document.getElementById(id),{type,data,options:{responsive:true,maintainAspectRatio:false,...opt}})}
 function esc(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
 
-// Função que executa uma tarefa com delay para permitir que o navegador mostre o status "Processando..."
+// Função que executa tarefa com delay para exibir status de carregamento
 function runWithLoading(btnId, originalText, task) {
     let btn = document.getElementById(btnId);
     if (!btn) return;
     
-    // Altera o botão visualmente e trava ele
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...`;
     
-    // O setTimeout força o navegador a renderizar o spinner antes de travar processando a matemática pesada
     setTimeout(() => {
         try {
             task();
         } catch(e) {
             console.error(e);
-            alert("Ocorreu um erro durante o processamento da análise.");
+            alert("Ocorreu um erro durante o processamento.");
         } finally {
-            // Restaura o botão ao normal após concluir
             btn.disabled = false;
             btn.innerHTML = originalText;
         }
@@ -61,7 +58,22 @@ function runWithLoading(btnId, originalText, task) {
 }
 
 function metrics(t,f){let raw=toks(t),u=f.length,total=f.reduce((a,b)=>a+b.n,0),sent=t.split(/[.!?]+/).filter(x=>x.trim()).length,ttr=total?u/total:0;document.getElementById('metricas').innerHTML=[[raw.length,'Tokens'],[u,'Vocabulário'],[(ttr*100).toFixed(1)+'%','Riqueza lexical'],[sent,'Sentenças']].map(x=>`<div class="col-sm-6 col-xl-3"><div class="metric"><b>${x[0]}</b><br><small>${x[1]}</small></div></div>`).join('');mk('perfil','doughnut',{labels:['Top 5','Demais'],datasets:[{data:[f.slice(0,5).reduce((a,b)=>a+b.n,0),Math.max(total-f.slice(0,5).reduce((a,b)=>a+b.n,0),0)]}]},{plugins:{legend:{position:'bottom'}}})}
-function renderFreq(){let a=S.freq.slice(0,20).reverse();mk('freqChart','bar',{labels:a.map(x=>x.palavra),datasets:[{data:a.map(x=>x.n),backgroundColor:'#2C3E50'}]},{indexAxis:'y',plugins:{legend:{display:false}}});let d=document.getElementById('cloud');d.innerHTML='';let mx=Math.max(...S.freq.map(x=>x.n),1);WordCloud(d,{list:S.freq.slice(0,100).map(x=>[x.palavra,12+x.n/mx*42]),gridSize:8,fontFamily:'Arial',color:'random-dark',backgroundColor:'white',rotateRatio:.15})}
+
+// Renderiza apenas o gráfico de barras
+function renderFreq(){
+    let a=S.freq.slice(0,20).reverse();
+    mk('freqChart','bar',{labels:a.map(x=>x.palavra),datasets:[{data:a.map(x=>x.n),backgroundColor:'#2C3E50'}]},{indexAxis:'y',plugins:{legend:{display:false}}});
+}
+
+// Renderiza Nuvem de Palavras separadamente
+function renderCloud(){
+    let d=document.getElementById('cloud');
+    d.innerHTML='';
+    if (!S.freq.length) return;
+    let mx=Math.max(...S.freq.map(x=>x.n),1);
+    WordCloud(d,{list:S.freq.slice(0,100).map(x=>[x.palavra,12+x.n/mx*42]),gridSize:8,fontFamily:'Arial',color:'random-dark',backgroundColor:'white',rotateRatio:.15});
+}
+
 function renderN(){S.ngr=ng(selected(S.text),+document.getElementById('ng').value);let a=S.ngr.slice(0,20).reverse();mk('ngChart','bar',{labels:a.map(x=>x.grama),datasets:[{data:a.map(x=>x.n),backgroundColor:'#536878'}]},{indexAxis:'y',plugins:{legend:{display:false}}});document.querySelector('#ngTable tbody').innerHTML=S.ngr.map(x=>`<tr><td>${esc(x.grama)}</td><td>${x.n}</td></tr>`).join('');if(window.ngT)ngT.destroy();window.ngT=new DataTable('#ngTable',{pageLength:10,lengthChange:false})}
 
 function renderK(){
@@ -158,7 +170,7 @@ function process(){
     if(!S.text)return alert('Insira um texto.');
     
     S.freq = count(selected(S.text));
-    S.bigramas = ng(selected(S.text), 2); // Pré-calcula os bigramas em background
+    S.bigramas = ng(selected(S.text), 2); 
     
     metrics(S.text,S.freq);
     renderFreq();
@@ -174,7 +186,18 @@ document.getElementById('processar').onclick = () => {
 document.getElementById('btnKwic').onclick = () => {
     if (!S.text) return alert('Processe o corpus primeiro.');
     if (!document.getElementById('termo').value) return alert('Digite um termo no campo acima.');
-    runWithLoading('btnKwic', 'Gerar KWIC / Associação', renderK);
+    runWithLoading('btnKwic', 'Gerar KWIC', renderK);
+};
+
+document.getElementById('btnCooc').onclick = () => {
+    if (!S.text) return alert('Processe o corpus primeiro.');
+    if (!document.getElementById('termo').value) return alert('Digite um termo no campo de KWIC/Associação na barra lateral.');
+    runWithLoading('btnCooc', '▶ Gerar Associação', renderK);
+};
+
+document.getElementById('btnNuvem').onclick = () => {
+    if (!S.text) return alert('Processe o corpus primeiro.');
+    runWithLoading('btnNuvem', '▶ Gerar Nuvem de Palavras', renderCloud);
 };
 
 document.getElementById('btnRede').onclick = () => {
