@@ -37,23 +37,39 @@ function mk(id,type,data,opt={}){if(C[id])C[id].destroy();C[id]=new Chart(docume
 function esc(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
 
 function runWithLoading(btnId, originalText, task) {
-    let btn = document.getElementById(btnId);
-    if (!btn) return;
-    
+    const btn = document.getElementById(btnId);
+
+    if (!btn) {
+        console.error("Botão não encontrado:", btnId);
+        return;
+    }
+
     btn.disabled = true;
-    btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...`;
-    
+    btn.innerHTML = `
+        <span class="spinner-border spinner-border-sm" role="status"></span>
+        Processando...
+    `;
+
     setTimeout(() => {
         try {
             task();
-        } catch(e) {
-            console.error(e);
-            alert("Erro durante o processamento. Certifique-se de que o texto não está vazio.");
+        } catch (e) {
+            console.error("=================================");
+            console.error("ERRO NA ANÁLISE");
+            console.error("Mensagem:", e.message);
+            console.error("Stack:", e.stack);
+            console.error("=================================");
+
+            alert(
+                "Erro durante a análise:\n\n" +
+                e.message +
+                "\n\nAbra o Console do navegador (F12) para mais detalhes."
+            );
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalText;
         }
-    }, 50); 
+    }, 50);
 }
 
 function metrics(t,f){let raw=toks(t),u=f.length,total=f.reduce((a,b)=>a+b.n,0),sent=t.split(/[.!?]+/).filter(x=>x.trim()).length,ttr=total?u/total:0;document.getElementById('metricas').innerHTML=[[raw.length,'Tokens'],[u,'Vocabulário'],[(ttr*100).toFixed(1)+'%','Riqueza lexical'],[sent,'Sentenças']].map(x=>`<div class="col-sm-6 col-xl-3"><div class="metric"><b>${x[0]}</b><br><small>${x[1]}</small></div></div>`).join('');mk('perfil','doughnut',{labels:['Top 5','Demais'],datasets:[{data:[f.slice(0,5).reduce((a,b)=>a+b.n,0),Math.max(total-f.slice(0,5).reduce((a,b)=>a+b.n,0),0)]}]},{plugins:{legend:{position:'bottom'}}})}
